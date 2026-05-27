@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Croquis — Museo del Prado</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --cream: #f5f0e8;
+    --parchment: #e8dfc8;
+    --gold: #b8922a;
+    --gold-light: #d4aa4a;
+    --dark: #1a1612;
+    --brown: #4a3728;
+    --wall: #c8bba0;
+    --room-bg: rgba(232, 223, 200, 0.35);
+    --room-border: rgba(184, 146, 42, 0.5);
+  }
+
+  body {
+    background: var(--cream);
+    font-family: 'Montserrat', sans-serif;
+    color: var(--dark);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 48px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.6rem;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    color: var(--brown);
+    text-transform: uppercase;
+  }
+
+  header p {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-top: 4px;
+  }
+
+  .map-container {
+    position: relative;
+    width: 100%;
+    max-width: 820px;
+  }
+
+  /* --- Building outline --- */
+  .building {
+    position: relative;
+    background: var(--parchment);
+    border: 2.5px solid var(--brown);
+    border-radius: 3px;
+    padding: 24px;
+    box-shadow: 4px 6px 28px rgba(74,55,40,0.18);
+  }
+
+  .floor-label {
+    text-align: center;
+    font-size: 0.6rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+  }
+
+  /* --- Grid layout of the floor plan --- */
+  .floor-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 10px;
+  }
+
+  .room {
+    background: var(--room-bg);
+    border: 1.5px solid var(--room-border);
+    border-radius: 2px;
+    padding: 10px 8px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.25s, transform 0.2s, box-shadow 0.25s;
+    position: relative;
+    min-height: 80px;
+    justify-content: center;
+  }
+
+  .room:hover {
+    background: rgba(184, 146, 42, 0.15);
+    box-shadow: 0 3px 16px rgba(184,146,42,0.22);
+    transform: translateY(-2px);
+  }
+
+  .room.active {
+    background: rgba(184, 146, 42, 0.22);
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-light);
+  }
+
+  .room-number {
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+
+  .room-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.88rem;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--dark);
+    text-align: center;
+    line-height: 1.3;
+    margin-bottom: 2px;
+  }
+
+  .room-artist {
+    font-size: 0.58rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--brown);
+    text-align: center;
+    opacity: 0.8;
+  }
+
+  .room-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+  }
+
+  /* Colour coding by painter */
+  .velazquez .room-dot { background: #7b4a8c; }
+  .velazquez { border-color: rgba(123,74,140,0.5); }
+  .velazquez.active, .velazquez:hover { background: rgba(123,74,140,0.12); }
+
+  .goya .room-dot { background: #b0431a; }
+  .goya { border-color: rgba(176,67,26,0.5); }
+  .goya.active, .goya:hover { background: rgba(176,67,26,0.1); }
+
+  .rubens .room-dot { background: #2a6e8c; }
+  .rubens { border-color: rgba(42,110,140,0.5); }
+  .rubens.active, .rubens:hover { background: rgba(42,110,140,0.1); }
+
+  .bosch .room-dot { background: #3a7d44; }
+  .bosch { border-color: rgba(58,125,68,0.5); }
+  .bosch.active, .bosch:hover { background: rgba(58,125,68,0.1); }
+
+  /* Corridors / passages between rooms */
+  .corridor-h {
+    grid-column: span 3;
+    height: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .corridor-h::before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 1px;
+    border-top: 1px dashed rgba(74,55,40,0.3);
+  }
+  .corridor-label {
+    position: absolute;
+    background: var(--parchment);
+    padding: 0 8px;
+    font-size: 0.52rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--wall);
+  }
+
+  /* Wide room spanning 2 cols */
+  .room.wide { grid-column: span 2; }
+  .room.full { grid-column: span 3; }
+
+  /* --- Info panel --- */
+  .info-panel {
+    margin-top: 24px;
+    background: white;
+    border: 1px solid var(--parchment);
+    border-radius: 3px;
+    padding: 20px 24px;
+    min-height: 90px;
+    box-shadow: 2px 4px 14px rgba(74,55,40,0.09);
+    transition: opacity 0.3s;
+    opacity: 0;
+  }
+  .info-panel.visible { opacity: 1; }
+
+  .info-panel h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.35rem;
+    font-style: italic;
+    font-weight: 400;
+    color: var(--dark);
+    margin-bottom: 2px;
+  }
+  .info-panel .meta {
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+  .info-panel p {
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: var(--brown);
+  }
+
+  /* --- Legend --- */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--brown);
+  }
+  .legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* compass rose */
+  .compass {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-size: 0.55rem;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    text-align: center;
+    opacity: 0.7;
+  }
+  .compass span { display: block; font-size: 1rem; line-height: 1; }
+
+  /* entrance marker */
+  .entrance {
+    grid-column: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px;
+    font-size: 0.58rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--brown);
+    border-top: 2px solid var(--brown);
+    margin-top: 4px;
+  }
+  .entrance::before, .entrance::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--brown);
+    opacity: 0.3;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Museo del Prado</h1>
+  <p>Croquis de obras maestras · Planta principal</p>
+</header>
+
+<div class="map-container">
+  <div class="building">
+    <div class="compass"><span>⊕</span>N</div>
+    <div class="floor-label">Planta Baja &amp; Primera — Galerías de pintura</div>
+
+    <div class="floor-grid">
+
+      <!-- Fila norte -->
+      <div class="room velazquez" data-obra="Las Meninas" data-artista="Diego Velázquez" data-sala="Sala 12" data-info="Obra cumbre de Velázquez y de toda la pintura occidental. Reúne a la infanta Margarita, sus damas, el propio pintor y el reflejo de los reyes. Un ejercicio único sobre la mirada, la representación y el espacio. Ocupa el lugar de honor de la sala." onclick="activar(this)">
+        <div class="room-dot"></div>
+        <div class="room-number">Sala 12</div>
+        <div class="room-title">Las Meninas</div>
+        <div class="room-artist">Velázquez</div>
+      </div>
+
+      <div class="room rubens" data-obra="Las Tres Gracias" data-artista="Peter Paul Rubens" data-sala="Sala 29" data-info="Una de las últimas grandes obras de Rubens, pintada para su colección privada. Las tres figuras —Eufrosine, Aglaya y Talía— danzan entrelazadas en una composición circular de una sensualidad exuberante. El Prado la adquirió en 1777." onclick="activar(this)">
+        <div class="room-dot"></div>
+        <div class="room-number">Sala 29</div>
+        <div class="room-title">Las Tres Gracias</div>
+        <div class="room-artist">Rubens</div>
+      </div>
+
+      <div class="room rubens" data-obra="El cardenal-infante Fernando" data-artista="Peter Paul Rubens" data-sala="Zona Rubens / Flamencos" data-info="Retrato ecuestre de Fernando de Austria, gobernador de los Países Bajos. Rubens lo pintó poco después de la batalla de Nördlingen (1634). Obra de gran aparato dinástico, típica del retrato de aparato barroco flamenco." onclick="activar(this)">
+        <div class="room-dot"></div>
+        <div class="room-number">Flamencos</div>
+        <div class="room-title">El cardenal-infante Fernando</div>
+        <div class="room-artist">Rubens</div>
+      </div>
+
+      <!-- Corredor central -->
+      <div class="corridor-h">
+        <span class="corridor-label">Galería central</span>
+      </div>
+
+      <!-- Fila central -->
+      <div class="room bosch" data-obra="El jardín de las delicias" data-artista="Hieronymus Bosch (El Bosco)" data-sala="Sala 56A" data-info="Tríptico monumental de El Bosco (c. 1490–1510). El panel izquierdo muestra el Paraíso, el central la humanidad entregada a los placeres mundanos, y el derecho el Infierno. Es la obra más visitada y debatida del museo." onclick="activar(this)">
+        <div class="room-dot"></div>
+        <div class="room-number">Sala 56A</div>
+        <div class="room-title">El jardín de las delicias</div>
+        <div class="room-artist">El Bosco</div>
+      </div>
+
+      <div class="room goya" data-obra="La maja desnuda" data-artista="Francisco de Goya" data-sala="Sala 38" data-info="Uno de los desnudos femeninos más célebres de la historia del arte. Encargada probablemente por Manuel Godoy hacia 1797–1800. La mirada directa de la figura al espectador fue escandalosa en su época y provocó un proceso inquisitorial." onclick="activar(this)">
+        <div class="room-dot"></div>
+        <div class="room-number">Sala 38</div>
+        <div class="room-title">La maja desnuda</div>
+        <div class="room-artist">Goya</div>
+      </div>
+
+      <div class="room goya" data-obra="El 3 de mayo en Madrid" data-artista="Francisco de Goya" data-sala="Sala 64" data-info="Pintado en 1814 para conmemorar la resistencia madrileña ante las tropas napoleónicas. La figura del hombre de camisa blanca con los brazos en alto se ha convertido en símbolo universal del mártir civil y la brutalidad del poder." onclick="activar(this)">
+        <div class="room-dot"></div>
+        <div class="room-number">Sala 64</div>
+        <div class="room-title">El 3 de mayo en Madrid</div>
+        <div class="room-artist">Goya</div>
+      </div>
+
+      <!-- Corredor sur -->
+      <div class="corridor-h">
+        <span class="corridor-label">Pinturas Negras — acceso sur</span>
+      </div>
+
+      <!-- Fila sur -->
+      <div class="room goya wide" data-obra="Saturno devorando a su hijo" data-artista="Francisco de Goya" data-sala="Sala 67" data-info="La más perturbadora de las Pinturas Negras (1820–23). Goya la pintó directamente sobre el muro de su casa, la Quinta del Sordo. Arrancada en 1874 y trasladada a lienzo, encarna el horror visceral, la vejez y la autodestrucción." onclick="activar(this)">
+        <div class="room-dot"></div>
+        <div class="room-number">Sala 67</div>
+        <div class="room-title">Saturno devorando a su hijo</div>
+        <div class="room-artist">Goya · Pinturas Negras</div>
+      </div>
+
+      <div class="room" style="opacity:0.25; pointer-events:none; border-style: dashed;">
+        <div class="room-number" style="font-size:0.5rem">Otras salas</div>
+      </div>
+
+    </div><!-- /floor-grid -->
+
+    <!-- Entrada -->
+    <div style="display:flex;justify-content:center;margin-top:16px;">
+      <div class="entrance">Puerta de Goya · Entrada principal</div>
+    </div>
+
+  </div><!-- /building -->
+
+  <!-- Leyenda -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#7b4a8c"></div>Velázquez</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#b0431a"></div>Goya</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2a6e8c"></div>Rubens</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#3a7d44"></div>El Bosco</div>
+  </div>
+
+  <!-- Panel de información -->
+  <div class="info-panel" id="infoPanel">
+    <h2 id="infoObra"></h2>
+    <div class="meta" id="infoMeta"></div>
+    <p id="infoDesc"></p>
+  </div>
+
+</div><!-- /map-container -->
+
+<script>
+  function activar(el) {
+    document.querySelectorAll('.room').forEach(r => r.classList.remove('active'));
+    el.classList.add('active');
+
+    const panel = document.getElementById('infoPanel');
+    document.getElementById('infoObra').textContent = el.dataset.obra;
+    document.getElementById('infoMeta').textContent = el.dataset.artista + '  ·  ' + el.dataset.sala;
+    document.getElementById('infoDesc').textContent = el.dataset.info;
+    panel.classList.add('visible');
+  }
+</script>
+</body>
+</html>
